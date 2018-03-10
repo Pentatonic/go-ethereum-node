@@ -5,6 +5,9 @@ const bodyparser = require('body-parser');
 const request = require("request");
 const _ = require('lodash');
 const Web3 = require('web3');
+const RateLimit = require('express-rate-limit');
+
+
 let web3;
 let RPC_SERVER = process.env.RPC_SERVER || "http://localhost:8333";
 
@@ -12,7 +15,6 @@ if (typeof web3 !== 'undefined') {
     web3 = new Web3(web3.currentProvider);
 }
 else {
-    // set the provider you want from Web3.providers
     web3 = new Web3(new Web3.providers.HttpProvider(RPC_SERVER));
 }
 
@@ -22,6 +24,13 @@ module.exports = (app, session) => {
     app.use(bodyparser.urlencoded({ extended: false }));
     app.use(bodyparser.json());
     app.use(session);
+    var limiter = new RateLimit({
+        windowMs: 15 * 60 * 1000, // 15 minutes
+        max: 100, // limit each IP to 100 requests per windowMs
+        delayMs: 0 // disable delaying - full speed until the max limit is reached
+    });
+    //  apply to all requests
+    app.use(limiter);
 
     app.get('/node', (req, res, next) => {
         debug('/node');
@@ -29,7 +38,7 @@ module.exports = (app, session) => {
             url: RPC_SERVER,
             method: 'POST',
             json: { "jsonrpc": "2.0", "method": "admin_nodeInfo", "params": [], "id": 11111 }
-        }, function (error, response, body) {
+        }, (error, response, body) => {
             if (!error && response.statusCode === 200) {
                 debug(JSON.stringify(body.result, null, 2))
                 let ret = _.pick(body.result, ['enode', 'name']);
@@ -45,7 +54,7 @@ module.exports = (app, session) => {
                 debug("response.statusCode: " + response.statusCode)
                 debug("response.statusText: " + response.statusText)
             }
-        })
+        });
     });
 
     app.get('/block/:num', (req, res, next) => {
@@ -75,6 +84,60 @@ module.exports = (app, session) => {
             ret = { result: -1, msg: 'Not found.' };
             res.status(404).send(JSON.stringify(ret));
         }
+    });
+
+    app.put('/miner', (req, res, next) => {
+        debug('miner start');
+        request({
+            url: RPC_SERVER,
+            method: 'POST',
+            json: { "jsonrpc": "2.0", "method": "miner_start", "params": [1], "id": 11111 }
+        }, (error, response, body) => {
+            if (!error && response.statusCode === 200) {
+                debug(JSON.stringify(body.result, null, 2))
+                res.status(200).send({ result: 0, msg: '' });
+            }
+            else {
+                res.status(500).send({
+                    result: -2,
+                    msg: "Something went wrong!"
+                });
+                debug("error: " + error)
+                debug("response.statusCode: " + response.statusCode)
+                debug("response.statusText: " + response.statusText)
+            }
+        });
+    });
+
+    app.delete('/miner', (req, res, next) => {
+        debug('miner stop');
+        request({
+            url: RPC_SERVER,
+            method: 'POST',
+            json: { "jsonrpc": "2.0", "method": "miner_stop", "params": [], "id": 11111 }
+        }, (error, response, body) => {
+            if (!error && response.statusCode === 200) {
+                debug(JSON.stringify(body.result, null, 2))
+                if (body.result == true) {
+                    res.status(200).send({ result: 0, msg: '' });
+                }
+                else {
+                    res.status(500).send({
+                        result: -2,
+                        msg: "failed to stop miner!"
+                    });
+                }
+            }
+            else {
+                res.status(500).send({
+                    result: -2,
+                    msg: "Something went wrong!"
+                });
+                debug("error: " + error)
+                debug("response.statusCode: " + response.statusCode)
+                debug("response.statusText: " + response.statusText)
+            }
+        });
     });
 
     app.use((err, req, res, next) => {

@@ -1,7 +1,29 @@
 [Environment setup]
+1. Install go-ethereum:
+   brew tap ethereum/ethereum
+   brew install ethereum
+2. Initilization and create account.
+3. Start two node:
+   geth --ipcdisable --rpc --rpcport 8104 --networkid 11111 --rpcapi="db,eth,net,web3,personal,amdin,miner" --nodiscover --port=30301 --rpccorsdomain="*" console
+   geth --networkid 11111 --port 30301 console
+4. Start miner for a while, and have enough wei to do transaction.
 
-1. Install go-ethereum
-    brew tap ethereum/ethereum
-    brew install ethereum
+[How to run]
+1. npm install
+2. npm run start (before start, change the RPC_SERVER env in package.json to your corresponding server)
+3. Default server port is 8080.
 
-2. 
+[Feature supported]
+1. GET command
+     /node
+     /block/:num
+     /transaction/:hash
+2. PUT command:
+     /miner
+3. DELETE command:
+     /miner
+4. In each returned json object, there is a 'result' and 'msg' key indicating command status.
+   For 'result', 0: sucess, -1: not found, -2: other errors.
+   Key 'msg' will include more detail information if needed.
+5. Return corresponding http status for each command.
+6. Currently set a common rate-limit for each command, which is 100 requests per 15 minutes.
