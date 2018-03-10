@@ -1,39 +1,31 @@
-var request = require("request");
-var Web3 = require('web3');
-var web3;
 
-// console.log(web3.eth);
-if (typeof web3 !== 'undefined') {
-    web3 = new Web3(web3.currentProvider);
-} else {
-    // set the provider you want from Web3.providers
-    // web3.setProvider(new web3.providers.HttpProvider('http://localhost:8104'));
-    web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8104"));
-  }
-console.log(web3.eth.accounts);
-console.log(web3.eth.coinbase);
-console.log(web3.eth.blockNumber);
-console.log('isConnected: ' + web3.isConnected());
-console.log('getBlock: ' + JSON.stringify(web3.eth.getBlock(68), null, 2));
-console.log('getTransaction: '
-    + JSON.stringify(web3.eth.getTransaction('0x0eac236fcbb569f2412706ace8cf12527d3de03828aa42b98ad4561baa7588c4'), null, 2));
+const debug = require('debug')('index');
+const express = require('express');
+const session = require('express-session');
 
 
-//curl -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"admin_nodeInfo","params":[1],"id":11111}' localhost:8104 -v
-//echo '{"jsonrpc":"2.0","method":"admin_nodeInfo","params":[],"id":1}' | nc -U /Users/pentatonic/Library/Ethereum/geth.ipc
+const sessionMW = session({
+    secret: 'keep going',
+    resave: true,
+    saveUninitialized: true,
+    //cookie: {maxAge: 60*24*60*60*1000},
+});
 
-request({
-    url: 'http://localhost:8104',
-    method: 'POST',
-    json: {"jsonrpc":"2.0","method":"admin_nodeInfo","params":[],"id":11111}
-}, function (error, response, body) {
-    if (!error && response.statusCode === 200) {
-        console.log(body)
-    }
-    else {
+const app = express();
+let server = null;
+debug('NODE_ENV %s', process.env.NODE_ENV);
+if (process.env.NODE_ENV === 'production') {
+    // not implemented yet
+    debug('using https...');
+}
+else {
+    server = require('http').createServer(app);
+    debug('using http...');
+}
 
-        console.log("error: " + error)
-        console.log("response.statusCode: " + response.statusCode)
-        console.log("response.statusText: " + response.statusText)
-    }
-})
+require('./route')(app, sessionMW);
+
+const port = process.env.PORT || 8080;
+server.listen(port, () => {
+    debug('Server started on port: ' + port);
+});

@@ -4,11 +4,19 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "exit 0",
+    "start": "cross-env DEBUG=index,route DEBUG_COLORS=1 AUTHENTICATION=false RPC_SERVER=http://localhost:8104 node index.js",
+    "postinstall": "npm run build"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "cross-env": "^5.1.4",
+    "express": "^4.16.2",
+    "express-session": "^1.15.6",
+    "helmet": "^3.12.0",
+    "lodash": "^4.17.5",
     "request": "^2.83.0",
     "web3": "^0.14.0"
   }

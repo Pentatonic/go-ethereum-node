@@ -1,0 +1,7 @@
+[Environment setup]
+
+1. Install go-ethereum
+    brew tap ethereum/ethereum
+    brew install ethereum
+
+2. 
